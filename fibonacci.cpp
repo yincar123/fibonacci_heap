@@ -5,44 +5,49 @@ template<class T>
 void fibonacci<T>::insert(T d){
 	nodob<T> *p_new=new nodob<T>(d);
 	if(root.empty()){
-		p_new->pos=0;
 		root.push_back(p_new);
 		min=p_new;
 	}
 	else{
-		int pos1=min->pos;
-		auto it=root.begin();
-		int j=pos1;
-		while(j>0){
-			++it;
-			j--;
-		}
-		if(p_new->date <= min->date){
-			p_new->pos=pos1;
-			min=p_new;
-			root.insert(it,p_new);
-		}
-		else{
-			min->pos+=1;
-			root.insert(it,p_new);
+		auto p=root.begin();
+		if(find(min->date,p)){
+			if(min->date >= d){
+				min=p_new;
+				root.insert(p,p_new);
+			}
+			else{
+				root.insert(p,p_new);
+			}
 		}
 	}
 	_size++;
 }
 
 template<class T>
-void fibonacci<T>::deletemin(){
-	auto pos1=min->pos;
-	auto it=root.begin();
-	while(pos1!=0){
+bool fibonacci<T>::find(T d,auto &it){
+	while(it!=root.end()){
+		if((*it)->date==d){
+			return 1;
+		}
 		++it;
-		--pos1;
 	}
-	auto iter=(*it)->m_son.begin();
-	if((iter!=(*it)->m_son.end())){
-		root.insert(it,iter,(*it)->m_son.end());
+	return 0;
+}
+
+template<class T>
+void fibonacci<T>::deletemin(){
+	auto p=root.begin();
+	find(min->date,p);
+
+	auto it=(*p)->m_son.begin();
+	while(it!=(*p)->m_son.end()){
+		(*it)->father=0;
+		++it;
 	}
-	root.erase(it);
+	if((*p)->m_son.begin()!=(*p)->m_son.end()){
+		root.insert(p,(*p)->m_son.begin(),(*p)->m_son.end());
+	}
+	root.erase(p);
 	_size--;
 	actualizar();
 }
@@ -68,13 +73,10 @@ template<class T>
 void fibonacci<T>::actualizarmin(){
 	auto it=root.begin();
 	min=*it;
-	int count=0;
 	while(it!=root.end()){
 		if(min->date > (*it)->date){
 			min=(*it);
-			min->pos=count;
 		}
-		count++;
 		++it;
 	}
 }
@@ -109,6 +111,43 @@ nodob<T>* fibonacci<T>::_union(nodob<T> *p,nodob<T> *q){
 }
 
 template<class T>
+bool fibonacci<T>::findroot(T d,std::list<nodob<T>*> &son,nodob<T> **&p){
+	auto iter=son.begin();
+	while(iter!=son.end()){
+		if((*iter)->date==d){
+			p=&(*iter);
+			return 1;
+		}
+		if(findroot(d,(*iter)->m_son,p)){
+			return 1;
+		}
+		++iter;
+	}
+	return 0;
+}
+
+template<class T>
+void fibonacci<T>::decresekey(nodob<T> **p){
+	auto q=min->date-1;
+	while((*p)->father){
+		(*p)->date=(*p)->father->date;
+		(*p)->father->date=q;
+		p=&(*p)->father;
+	}
+}
+
+template<class T>
+void fibonacci<T>::remove(T d){
+	nodob<T> **p;
+	if(findroot(d,root,p)){
+		decresekey(p);
+		actualizarmin();
+		deletemin();
+	}
+}
+
+
+template<class T>
 void fibonacci<T>::print(){
 	std::ofstream file("fibonacci.dot");
 	file<<"digraph{"<<std::endl;
@@ -119,7 +158,7 @@ void fibonacci<T>::print(){
 		print((*it)->m_son,cont,file);
 		++it;
 	}
-	 file<<"minimo ->"<<min->date<<";"<<std::endl;
+	file<<"minimo ->"<<min->date<<";"<<std::endl;
 	file<<"}";
 	file.close();
 	system("dot -Tpdf fibonacci.dot -o fibonacci.pdf");

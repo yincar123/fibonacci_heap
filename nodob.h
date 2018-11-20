@@ -7,14 +7,11 @@ class nodob{
 public:
 	T date;
 	int grade;
-	int pos;
 	nodob<T> *father;
 	std::list<nodob<T>*> m_son;
 public:
 	nodob(){
-		date=nullptr;
 		father=nullptr;
-		grade=nullptr;
 	}
 	nodob(T d){
 		date=d;
